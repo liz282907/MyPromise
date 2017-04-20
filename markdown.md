@@ -20,6 +20,9 @@ fulfill活着reject没有返回数值，Promise2会怎么样
 一个是没有决议，但是then注册了方法。下一次决议时，就要执行这些
 另一个是注册时已经决议完了。那么立刻执行队列
 
+要保证promise2一定在fulfilled以后被执行而且肯定会被执行:
+暂时的解决方案是： 用setTimeout. 这个是macro-task。一定在当前的micro-task执行完才会执行
+
 
 
 ### 调试

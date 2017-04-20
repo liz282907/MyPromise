@@ -84,6 +84,7 @@ class MyPromise {
         this.executeResolution.bind(this);
         this.then.bind(this)
         this.checkCurState.bind(this)
+        this._doneFullOrRej.bind(this)
 
         const resolve = (value) => {
             //不安全的值-> 安全的只决议一次的promise，出错后直接reject，而不会执行下面fulfilled
@@ -172,8 +173,6 @@ class MyPromise {
         self.onFulfilledQueue.push(onFulfilled);
         self.onRejectedQueue.push(onRejected);
 
-        self.checkCurState();
-
         const promise2 = new MyPromise(function(resolve, reject) {
             //用onfullfilled或reject的返回值去resolve promise2
             self._doneFullOrRej(function(err, value) {
@@ -181,6 +180,7 @@ class MyPromise {
                 if(value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
             });
         })
+        self.checkCurState();
         return promise2;
 
     }
@@ -191,7 +191,9 @@ class MyPromise {
      * @return {[type]}      [description]
      */
     _doneFullOrRej(fn) {
-        this.multiPromise2Cb.push(fn);
+        this.multiPromise2Cb.push(function(){
+            setTimeout(fn)
+        });
     }
 
     /**

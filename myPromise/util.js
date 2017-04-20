@@ -68,11 +68,11 @@ export const asyncCallback = (fn,value,promise2cb)=>{
 	return asyncFunction(function(){
 		try{
 			finalValue = fn(value);
-			promise2cb(null,finalValue);
+			if(promise2cb) promise2cb(null,finalValue);
 			// promise2._resolve(finalValue);
 
 		}catch(e){
-			promise2cb(e,null)
+			if(promise2cb) promise2cb(e,null)
 			// promise2._reject(e);
 			return 
 		}
