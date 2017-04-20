@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>myPromsie</title>
+</head>
+<body>
+
+</body>
+<script type="text/javascript" src='../dist/myPromise.js'></script>
+<script type="text/javascript">
+const test = new window.MyPromise(function(resolve, reject) {
+    console.log('--------');
+    reject(3);
+})
+
+test.then(function(v) {
+    console.log(v)
+},function (e) {
+    console.log(e)
+})
+
+
+</script>
+</html>
