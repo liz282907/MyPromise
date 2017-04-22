@@ -7,15 +7,16 @@ export const isTypeof = (type)=>{
 			if(obj===null) objType = 'null'
 			else if(typeof(obj)==='undefined') objType = 'undefined'
 			else{
+				if(type==='Function') return typeof(obj)==='function'
+				if(type==='Object') return typeof(obj)==='object'
+
+				if(obj.constructor===undefined) return false; //x由Object.create(null),且要检验是否为自定义类型
 				const matchArr = obj.constructor.toString().match(reg)
-				if(!matchArr) return false
+				if(!matchArr) return false 
 				objType = matchArr[1]
 			}
-			return objType===type
-
-			// if(type==='null') return obj===null;
-			// else if(type==='undefined') return typeof(obj)===type
-			// else return obj!==null && typeof(obj)!=='undefined' &&obj.constructor.toString().search(reg)!==-1
+			// if(type==='Function') return objType===type && typeof(obj)==='function'//应对Object.create(Function.prototype)
+			return objType===type 
 		})		
 	}
 }
@@ -79,11 +80,11 @@ export const asyncCallback = (fn,value,promise2cb)=>{
 	return asyncFunction(function(){
 		try{
 			finalValue = fn(value);
-			if(promise2cb) promise2cb(null,finalValue);
+			if(promise2cb) promise2cb(null,finalValue,true);
 			// promise2._resolve(finalValue);
 
 		}catch(e){
-			if(promise2cb) promise2cb(e,null)
+			if(promise2cb) promise2cb(e,null,false)
 			// promise2._reject(e);
 			return 
 		}

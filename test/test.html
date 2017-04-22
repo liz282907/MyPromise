@@ -10,28 +10,48 @@
 </body>
 <script type="text/javascript" src='../dist/myPromise.js'></script>
 <script type="text/javascript">
-var test = new window.MyPromise(function(resolve, reject) {
-    resolve({
-        dummy: 'dummy'
-    })
-})
-var p1 = test.then(function() {
-        throw 'error in fulfill';
-    })
-p1.then(null, function(e) {
-        console.log(e);
-    });
+// var test = new window.MyPromise(function(resolve, reject) {
+//     resolve({
+//         dummy: 'dummy'
+//     })
+// })
+// var p1 = test.then(function() {
+//         return undefined
+//     })
+// p1.then(function(v){
+// 	console.log(v)
+// }, function(e) {
+//         console.log(e);
+//     });
 
+//2
+// var test = new window.MyPromise(function(resolve, reject) {
+//     resolve({
+//         then: Object.create(Function.prototype)
+//     })
+// })
+// var p1 = test.then(function(v) {
+//         console.log(v)
+//     })
+numberOfTimesThenWasRetrieved = 0;
 var test2 = new window.MyPromise(function(resolve, reject) {
-    reject({
-        dummy: 'dummy'
+    resolve(Object.create(null, {
+                    then: {
+                        get: function () {
+                            ++numberOfTimesThenWasRetrieved;
+                            return function thenMethodForX(onFulfilled) {
+                                onFulfilled();
+                            };
+                        }
+                    }
+                }))
+})
+var p1 = test2.then(function(v) {
+        console.log(v,numberOfTimesThenWasRetrieved)
+    },function(err){
+    	console.log(err)
     })
-})
-test2.then(null,function(){
-	throw 'test Reject exception'
-}).then(null,function(e){
-	console.log(e)
-})
+
 
 /**
 //test1:

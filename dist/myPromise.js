@@ -256,9 +256,11 @@ process.umask = function () {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process, setImmediate) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return isTypeof; });
-/* unused harmony export isFunction */
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return isThenable; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return isFunction; });
+/* unused harmony export isThenable */
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return asyncCallback; });
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var isTypeof = function isTypeof(type) {
 	return function (obj) {
 		var types = type.split("||");
@@ -266,15 +268,16 @@ var isTypeof = function isTypeof(type) {
 			var reg = new RegExp('function\\s+(' + type + ').*');
 			var objType = void 0;
 			if (obj === null) objType = 'null';else if (typeof obj === 'undefined') objType = 'undefined';else {
+				if (type === 'Function') return typeof obj === 'function';
+				if (type === 'Object') return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
+
+				if (obj.constructor === undefined) return false; //x由Object.create(null),且要检验是否为自定义类型
 				var matchArr = obj.constructor.toString().match(reg);
 				if (!matchArr) return false;
 				objType = matchArr[1];
 			}
+			// if(type==='Function') return objType===type && typeof(obj)==='function'//应对Object.create(Function.prototype)
 			return objType === type;
-
-			// if(type==='null') return obj===null;
-			// else if(type==='undefined') return typeof(obj)===type
-			// else return obj!==null && typeof(obj)!=='undefined' &&obj.constructor.toString().search(reg)!==-1
 		});
 	};
 };
@@ -335,10 +338,10 @@ var asyncCallback = function asyncCallback(fn, value, promise2cb) {
 	return asyncFunction(function () {
 		try {
 			finalValue = fn(value);
-			if (promise2cb) promise2cb(null, finalValue);
+			if (promise2cb) promise2cb(null, finalValue, true);
 			// promise2._resolve(finalValue);
 		} catch (e) {
-			if (promise2cb) promise2cb(e, null);
+			if (promise2cb) promise2cb(e, null, false);
 			// promise2._reject(e);
 			return;
 		}
@@ -390,18 +393,7 @@ function _verifyAndResolve(promise, x) {
         });
     } else if (__WEBPACK_IMPORTED_MODULE_0__util__["a" /* isTypeof */]('Function||Object')(x)) {
 
-        try {
-            if (!__WEBPACK_IMPORTED_MODULE_0__util__["b" /* isThenable */](x)) return promise.executeResolution('fulfilled', x);else {
-                // resolveWithX(promise, x)
-                x.then(function resolve(y) {
-                    _verifyAndResolve(promise, y);
-                }, function reject(r) {
-                    promise.executeResolution('rejected', e);
-                });
-            }
-        } catch (e) {
-            promise.executeResolution('rejected', e);
-        }
+        resolveWithXThen(promise, x);
     } else promise.executeResolution('fulfilled', x);
 }
 
@@ -412,17 +404,28 @@ function _verifyAndResolve(promise, x) {
  * @param  {[type]} x       [description]
  * @return {[type]}         [description]
  */
-function resolveWithX(promise, x) {
+
+function resolveWithXThen(promise, x) {
+
     var executed = false;
-    x.then(function (v) {
+    try {
+        var xThen = x.then;
+        if (!(xThen && __WEBPACK_IMPORTED_MODULE_0__util__["b" /* isFunction */](xThen))) return promise.executeResolution('fulfilled', x);
+
+        xThen = xThen.bind(x);
+        xThen(function resolve(y) {
+            if (executed) return; //y 为thenable 的 thenable。但是一旦执行完就不可再次执行（异步函数，即放进队列里面去后就不准再添加改变状态的函数了）
+            _verifyAndResolve(promise, y);
+            executed = true;
+        }, function reject(reason) {
+            if (executed) return;
+            promise.executeResolution('rejected', reason);
+            executed = true;
+        });
+    } catch (e) {
         if (executed) return;
-        promise.executeResolution('fulfilled', v);
-        executed = true;
-    }, function (reason) {
-        if (executed) return;
-        promise.executeResolution('rejected', reason);
-        executed = true;
-    });
+        promise.executeResolution('rejected', e);
+    }
 }
 
 var MyPromise = function () {
@@ -548,9 +551,10 @@ var MyPromise = function () {
             //同步执行下去的，因此一个promise的ful,rej,以及promise2的resolve函数是可以得到的。但是执行的话顺序就要区分。
             var promise2 = new MyPromise(function (resolve, reject) {
                 //用onfullfilled或reject的返回值去resolve promise2
-                self._doneFullOrRej(function (err, value) {
-                    if (err) return reject(err);
-                    if (value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
+                self._doneFullOrRej(function (err, value, isResolve) {
+                    if (isResolve) resolve(value);else reject(err);
+                    // if (err) return reject(err);
+                    // if(value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
                 });
             });
             self.checkAndExecute();
@@ -571,19 +575,6 @@ var MyPromise = function () {
             //     setTimeout(fn)
             // });
         }
-
-        /**
-         * 将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
-         * @param  {[type]} promise  [description]
-         * @param  {[type]} promise2 [then需要返回的promise对象，需要用promise去resolve它]
-         * @return {[type]} resolve         [promise2的状态]
-         
-        
-        _doneFullOrRej(promise, promise2, resolve, reject) {
-            promise2._resolve = resolve;
-            promise2._reject = reject;
-        }
-        */
 
         /**
          * 私有方法，默认的fulfill函数跟reject函数

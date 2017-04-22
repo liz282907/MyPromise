@@ -41,8 +41,84 @@ fix:
 1. 类型判断的疏漏，undefined跟null是没有constructor的，所以不能那么判断，有可能遇到x为非thenable对象，那么x.then
 2. promise2的resolve也要异步，直接跟ful一样用async就行了。因为是一个队列里面的。
 3. 之前弄成下一个事件循环里面的了。
+4. x为function/object时，应该用x.then中的resolve的参数去resolve promise 
+而不是直接fullfill.
+5. x.then调用多次 executed判断
+6. obj.constructor 判断function还是有点问题的。无法应对 Object.create(Funtion.prototype)
+7. x.then的reference缓存下来，避免x.then 被访问多次，test case如下。标准里面也说了这一点，在note 3.5里面。
+
+```
+//test case .
+在判断then属性时多次访问了x.then:,导致最后的结果为3
+export const isThenable = (value)=>{
+    if(!value) return false;
+    return isObject(value) && value.then && isFunction(value.then)
+}
+
+numberOfTimesThenWasRetrieved = 0;
+var test2 = new window.MyPromise(function(resolve, reject) {
+    resolve(Object.create(null, {
+                    then: {
+                        get: function () {
+                            ++numberOfTimesThenWasRetrieved;
+                            return function thenMethodForX(onFulfilled) {
+                                onFulfilled();
+                            };
+                        }
+                    }
+                }))
+})
+var p1 = test2.then(function(v) {
+        console.log(v,numberOfTimesThenWasRetrieved) //3，实际上应该为1，
+    },function(err){
+        console.log(err)
+    })
+
+//fix的版本
+const xThen = x.then;
+            if( !(xThen && util.isFunction(xThen))) return promise.executeResolution('fulfilled', x)
+            promise.then = xThen;
+            resolveWithX(promise,promise);
+
+            // if(!util.isThenable(x)) return promise.executeResolution('fulfilled', x)
+            // else{
+            //     resolveWithX(promise, x)
+            // }
+
+```
 
 
+与此同时，要注意，将引用缓存下来后，还要保证this还是挂在x上面的，因此要xThen.bind(x)
+8. 如果在x resolve执行完后又抛出一个错，是需要忽略掉的，而不是被catch到
+
+```
+describe("2.3.3.3.4: If calling `then` throws an exception `e`,", function () {
+            describe("2.3.3.3.4.1: If `resolvePromise` or `rejectPromise` have been called, ignore it.", function () {
+                describe("`resolvePromise` was called with a non-thenable", function () {
+                    function xFactory() {
+                        return {
+                            then: function (resolvePromise) {
+                                resolvePromise(sentinel);
+                                throw other;
+                            }
+                        };
+                    }
+```
+因此代码里面加了excuted在catch里面return的判断
+
+以及为了保证一次决议后不能再执行，在resolve跟reject里面用excuted去进行判断
+```
+xThen(function resolve(y) {
+            if (executed) return       //y 为thenable 的 thenable。但是一旦执行完就不可再次执行（异步函数，即放进队列里面去后就不准再添加改变状态的函数了）
+            _verifyAndResolve(promise, y);
+            executed = true;
+        }, function reject(reason) {
+            if (executed) return
+            promise.executeResolution('rejected', reason)
+            executed = true;
+        })
+
+```
 todo: 
 1，设置属性不可访问及write
 
@@ -80,5 +156,53 @@ For example:
 //  return asyncFunction;
 // })()
 
+function resolveWithX(promise, x) {
+    let executed = false;
+    x.then(function resolve(y) {
+        if (executed) return
+        _verifyAndResolve(promise,y);
+        executed = true;
+    }, function reject(reason){
+        if (executed) return
+        promise.executeResolution('rejected', reason)
+        executed = true;
+    })
+}
+
+    /**
+     * 将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
+     * @param  {[type]} promise  [description]
+     * @param  {[type]} promise2 [then需要返回的promise对象，需要用promise去resolve它]
+     * @return {[type]} resolve         [promise2的状态]
+     
+    
+    _doneFullOrRej(promise, promise2, resolve, reject) {
+        promise2._resolve = resolve;
+        promise2._reject = reject;
+    }
+    */
+
+
+
+
+        try {
+            const xThen = x.then;
+            if (!(xThen && util.isFunction(xThen))) return promise.executeResolution('fulfilled', x)
+
+            resolveWithXThen(promise, xThen.bind(x));
+
+
+
+
+            // resolveWithX(promise,promise);
+
+            // if(!util.isThenable(x)) return promise.executeResolution('fulfilled', x)
+            // else{
+            //     resolveWithX(promise, x)
+            // }
+
+        } catch (e) {
+            promise.executeResolution('rejected', e);
+        }
 
     // "start": "webpack && promises-aplus-tests test/my-adapter",
