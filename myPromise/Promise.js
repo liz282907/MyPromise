@@ -21,7 +21,6 @@ const privateFunctions = {
  */
 function _verifyAndResolve(promise, x) {
 
-    console.log(x)
     if (promise === x) {
         promise.executeResolution('rejected', new TypeError('circulation in resolution'))
     } else if (util.isTypeof('MyPromise')(x)) {
@@ -33,13 +32,18 @@ function _verifyAndResolve(promise, x) {
         })
 
     } else if (util.isTypeof('Function||Object')(x)) {
+
         try {
-            promise.then = x.then
-            if (util.isFunction(x.then)) {
-                resolveWithX(promise, x)
-            } else {
-                promise.executeResolution('fulfilled', x)
+            if(!util.isThenable(x)) return promise.executeResolution('fulfilled', x)
+            else{
+                // resolveWithX(promise, x)
+                x.then(function resolve(y){
+                    _verifyAndResolve(promise,y);
+                },function reject(r){
+                    promise.executeResolution('rejected', e);
+                })
             }
+            
         } catch (e) {
             promise.executeResolution('rejected', e);
         }
@@ -83,7 +87,7 @@ class MyPromise {
 
         this.executeResolution.bind(this);
         this.then.bind(this)
-        this.checkCurState.bind(this)
+        this.checkAndExecute.bind(this)
         this._doneFullOrRej.bind(this)
 
         const resolve = (value) => {
@@ -91,7 +95,7 @@ class MyPromise {
             try {
                 _verifyAndResolve(this, value);
                 //否则直接fulfilled
-                this.executeResolution('fulfilled', value);
+                // this.executeResolution('fulfilled', value);
             } catch (e) {
                 this.executeResolution('rejected', e);
             }
@@ -118,16 +122,18 @@ class MyPromise {
         if (this.state !== 'pending') return //1
         this.state = state;
         this.value = result;
-        const callbackQueue = state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
-        const self = this;
 
-        callbackQueue.forEach((fn, i) => {
-            util.asyncCallback(fn, result, self.multiPromise2Cb[i]);
-        })
+        this.checkAndExecute();
+        // const callbackQueue = state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
+        // const self = this;
+
+        // callbackQueue.forEach((fn, i) => {
+        //     util.asyncCallback(fn, result, self.multiPromise2Cb[i]);
+        // })
         
-        this.onRejectedQueue =[];
-        this.onFulfilledQueue = [];
-        this.multiPromise2Cb = []
+        // this.onRejectedQueue =[];
+        // this.onFulfilledQueue = [];
+        // this.multiPromise2Cb = []
     }
 
     catch (reject) {
@@ -138,7 +144,7 @@ class MyPromise {
      * then 中注册函数后，如果当前状态在之前已经变更了 ，那么立刻执行
      * @return {[type]} [description]
      */
-    checkCurState(){
+    checkAndExecute(){
         if(this.state==='pending') return 
         const callbackQueue = this.state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
         const self = this;
@@ -163,16 +169,14 @@ class MyPromise {
      */
     then(onFulfilled = null, onRejected = null) {
         const self = this;
-            //const isFunction = util.isTypeof('Function')
-            //if(!isFunction(onFulfilled) && !isFunction(onRejected)) return
-            //if (onFulfilled) this.fulfilledQueue.push(onFulfilled);
-            //if (onRejected) this.onRejected.push(onRejected);
+        const isFunction = util.isTypeof('Function')
 
-        if (!onFulfilled) onFulfilled = self[privateFunctions.defaultFulfill]
-        if (!onRejected) onRejected = self[privateFunctions.defaultFulfill]
+        if (!isFunction(onFulfilled)) onFulfilled = self[privateFunctions.defaultFulfill]
+        if (!isFunction(onRejected)) onRejected = self[privateFunctions.defaultReject]
         self.onFulfilledQueue.push(onFulfilled);
         self.onRejectedQueue.push(onRejected);
 
+        //同步执行下去的，因此一个promise的ful,rej,以及promise2的resolve函数是可以得到的。但是执行的话顺序就要区分。
         const promise2 = new MyPromise(function(resolve, reject) {
             //用onfullfilled或reject的返回值去resolve promise2
             self._doneFullOrRej(function(err, value) {
@@ -180,7 +184,7 @@ class MyPromise {
                 if(value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
             });
         })
-        self.checkCurState();
+        self.checkAndExecute();
         return promise2;
 
     }
@@ -191,9 +195,10 @@ class MyPromise {
      * @return {[type]}      [description]
      */
     _doneFullOrRej(fn) {
-        this.multiPromise2Cb.push(function(){
-            setTimeout(fn)
-        });
+        this.multiPromise2Cb.push(fn);
+        // this.multiPromise2Cb.push(function(){
+        //     setTimeout(fn)
+        // });
     }
 
     /**
@@ -219,7 +224,7 @@ class MyPromise {
     }
 
     [privateFunctions.defaultReject](reason) {
-        throw (reason);
+        throw reason;
     }
 
     /**
@@ -250,6 +255,5 @@ class MyPromise {
 
 
 }
-window.MyPromise = MyPromise
-// module.exports = MyPromise
-// window.MyPromise = exports.default = MyPromise
+// window.MyPromise = MyPromise
+exports.default = MyPromise

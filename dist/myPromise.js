@@ -255,29 +255,37 @@ process.umask = function () {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process, setImmediate) {const isTypeof = type => {
-	return obj => {
-		const types = type.split("||");
-		return types.some(type => {
-			const reg = new RegExp(`function\\s+${type}+`);
-			return obj.constructor.toString().search(reg) !== -1;
+/* WEBPACK VAR INJECTION */(function(process, setImmediate) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return isTypeof; });
+/* unused harmony export isFunction */
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return isThenable; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return asyncCallback; });
+var isTypeof = function isTypeof(type) {
+	return function (obj) {
+		var types = type.split("||");
+		return types.some(function (type) {
+			var reg = new RegExp('function\\s+(' + type + ').*');
+			var objType = void 0;
+			if (obj === null) objType = 'null';else if (typeof obj === 'undefined') objType = 'undefined';else {
+				var matchArr = obj.constructor.toString().match(reg);
+				if (!matchArr) return false;
+				objType = matchArr[1];
+			}
+			return objType === type;
+
+			// if(type==='null') return obj===null;
+			// else if(type==='undefined') return typeof(obj)===type
+			// else return obj!==null && typeof(obj)!=='undefined' &&obj.constructor.toString().search(reg)!==-1
 		});
 	};
 };
-/* harmony export (immutable) */ __webpack_exports__["a"] = isTypeof;
 
+var isObject = isTypeof('Object');
+var isFunction = isTypeof('Function');
 
-const isObject = isTypeof('Object');
-const isFunction = isTypeof('Function');
-/* harmony export (immutable) */ __webpack_exports__["b"] = isFunction;
-
-
-const isThenable = value => {
+var isThenable = function isThenable(value) {
 	if (!value) return false;
 	return isObject(value) && value.then && isFunction(value.then);
 };
-/* unused harmony export isThenable */
-
 
 /**
  * 因为then函数里面所需要的是异步函数，确切的说是要micro-task，而浏览器中micro-task主要包括这么几个
@@ -289,20 +297,20 @@ const isThenable = value => {
  */
 
 function asyncFunction(fn) {
-	const isNativePromise = isTypeof('Promise');
+	var isNativePromise = isTypeof('Promise');
 
 	if (!process && process.nextTick) asyncFunction = process.nextTick;else if (isNativePromise(Promise)) {
-		const nativePromise = new Promise((resolve, reject) => {
+		var nativePromise = new Promise(function (resolve, reject) {
 			try {
 				resolve(value);
 			} catch (error) {
 				reject(error);
 			}
 		});
-		const defaultReject = err => {
+		var defaultReject = function defaultReject(err) {
 			throw err;
 		};
-		const proxyThen = function (fn) {
+		var proxyThen = function proxyThen(fn) {
 			return nativePromise.then(fn, defaultReject);
 		};
 		asyncFunction = proxyThen; //其实也可以不用代理，因为原生的promise内部就有默认错误处理函数
@@ -321,9 +329,9 @@ function asyncFunction(fn) {
  * @param             promise2 [当前promise对象调用的then中要返回的promise对象]
  * @return {[type]}         [description]
  */
-const asyncCallback = (fn, value, promise2cb) => {
+var asyncCallback = function asyncCallback(fn, value, promise2cb) {
 	if (!isFunction(fn)) return;
-	let finalValue;
+	var finalValue = void 0;
 	return asyncFunction(function () {
 		try {
 			finalValue = fn(value);
@@ -336,8 +344,6 @@ const asyncCallback = (fn, value, promise2cb) => {
 		}
 	});
 };
-/* harmony export (immutable) */ __webpack_exports__["c"] = asyncCallback;
-
 /* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(0), __webpack_require__(4).setImmediate))
 
 /***/ }),
@@ -347,9 +353,13 @@ const asyncCallback = (fn, value, promise2cb) => {
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__util__ = __webpack_require__(1);
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 
-const privateFunctions = {
+
+var privateFunctions = {
     'defaultFulfill': Symbol('default-fulfill'),
     'defaultReject': Symbol('default-reject')
 };
@@ -369,23 +379,25 @@ const privateFunctions = {
  */
 function _verifyAndResolve(promise, x) {
 
-    console.log(x);
     if (promise === x) {
         promise.executeResolution('rejected', new TypeError('circulation in resolution'));
     } else if (__WEBPACK_IMPORTED_MODULE_0__util__["a" /* isTypeof */]('MyPromise')(x)) {
 
-        x.then(v => {
+        x.then(function (v) {
             promise.executeResolution('fulfilled', v);
-        }, r => {
+        }, function (r) {
             promise.executeResolution('rejected', r);
         });
     } else if (__WEBPACK_IMPORTED_MODULE_0__util__["a" /* isTypeof */]('Function||Object')(x)) {
+
         try {
-            promise.then = x.then;
-            if (__WEBPACK_IMPORTED_MODULE_0__util__["b" /* isFunction */](x.then)) {
-                resolveWithX(promise, x);
-            } else {
-                promise.executeResolution('fulfilled', x);
+            if (!__WEBPACK_IMPORTED_MODULE_0__util__["b" /* isThenable */](x)) return promise.executeResolution('fulfilled', x);else {
+                // resolveWithX(promise, x)
+                x.then(function resolve(y) {
+                    _verifyAndResolve(promise, y);
+                }, function reject(r) {
+                    promise.executeResolution('rejected', e);
+                });
             }
         } catch (e) {
             promise.executeResolution('rejected', e);
@@ -401,21 +413,27 @@ function _verifyAndResolve(promise, x) {
  * @return {[type]}         [description]
  */
 function resolveWithX(promise, x) {
-    let executed = false;
-    x.then(v => {
+    var executed = false;
+    x.then(function (v) {
         if (executed) return;
         promise.executeResolution('fulfilled', v);
         executed = true;
-    }, reason => {
+    }, function (reason) {
         if (executed) return;
         promise.executeResolution('rejected', reason);
         executed = true;
     });
 }
 
-class MyPromise {
+var MyPromise = function () {
     // const states = Symbol(['pending', 'fulfilled', 'rejected']); //私有属性#
-    constructor(executor = null) {
+    function MyPromise() {
+        var _this = this;
+
+        var executor = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+
+        _classCallCheck(this, MyPromise);
+
         this.state = 'pending';
         this.value = null;
 
@@ -425,23 +443,23 @@ class MyPromise {
 
         this.executeResolution.bind(this);
         this.then.bind(this);
-        this.checkCurState.bind(this);
+        this.checkAndExecute.bind(this);
         this._doneFullOrRej.bind(this);
 
-        const resolve = value => {
+        var resolve = function resolve(value) {
             //不安全的值-> 安全的只决议一次的promise，出错后直接reject，而不会执行下面fulfilled
             try {
-                _verifyAndResolve(this, value);
+                _verifyAndResolve(_this, value);
                 //否则直接fulfilled
-                this.executeResolution('fulfilled', value);
+                // this.executeResolution('fulfilled', value);
             } catch (e) {
-                this.executeResolution('rejected', e);
+                _this.executeResolution('rejected', e);
             }
         };
 
-        const reject = reason => {
-            this.value = reason;
-            this.executeResolution('rejected', reason);
+        var reject = function reject(reason) {
+            _this.value = reason;
+            _this.executeResolution('rejected', reason);
         };
 
         if (executor) executor(resolve, reject); //因为是直接传递的函数，如果不绑定this的话，传过去的this实际上就变成了undefined
@@ -455,137 +473,166 @@ class MyPromise {
      * @param  {[type]} result [description]
      * @return {[type]}        [description]
      */
-    executeResolution(state, result) {
-        if (this.state !== 'pending') return; //1
-        this.state = state;
-        this.value = result;
-        const callbackQueue = state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
-        const self = this;
 
-        callbackQueue.forEach((fn, i) => {
-            __WEBPACK_IMPORTED_MODULE_0__util__["c" /* asyncCallback */](fn, result, self.multiPromise2Cb[i]);
-        });
 
-        this.onRejectedQueue = [];
-        this.onFulfilledQueue = [];
-        this.multiPromise2Cb = [];
-    }
+    _createClass(MyPromise, [{
+        key: 'executeResolution',
+        value: function executeResolution(state, result) {
+            if (this.state !== 'pending') return; //1
+            this.state = state;
+            this.value = result;
 
-    catch(reject) {
-        return this.then(null, reject);
-    }
+            this.checkAndExecute();
+            // const callbackQueue = state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
+            // const self = this;
 
-    /**
-     * then 中注册函数后，如果当前状态在之前已经变更了 ，那么立刻执行
-     * @return {[type]} [description]
-     */
-    checkCurState() {
-        if (this.state === 'pending') return;
-        const callbackQueue = this.state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
-        const self = this;
+            // callbackQueue.forEach((fn, i) => {
+            //     util.asyncCallback(fn, result, self.multiPromise2Cb[i]);
+            // })
 
-        callbackQueue.forEach((fn, i) => {
-            __WEBPACK_IMPORTED_MODULE_0__util__["c" /* asyncCallback */](fn, self.value, self.multiPromise2Cb[i]);
-        });
+            // this.onRejectedQueue =[];
+            // this.onFulfilledQueue = [];
+            // this.multiPromise2Cb = []
+        }
+    }, {
+        key: 'catch',
+        value: function _catch(reject) {
+            return this.then(null, reject);
+        }
 
-        this.onRejectedQueue = [];
-        this.onFulfilledQueue = [];
-        this.multiPromise2Cb = [];
-    }
+        /**
+         * then 中注册函数后，如果当前状态在之前已经变更了 ，那么立刻执行
+         * @return {[type]} [description]
+         */
 
-    /**
-     * 注册函数,同时监听当前promise的值，一有值就用它去resolve promise2
-     * 每一个promise对象都有一对自己的执行队列（fulfilled，reject,链式调用会生成一个新的promise对象，队列会重新创建）
-     * 同时该promise也应该是被决议了的，具体什么状态应该看之前promise（当前promise）的状态.具体来说之前fulfill或者reject必须有
-     * 返回值，用这个值v去执行resolveWithX(promise2,v), 得到这个值得过程中出了问题直接拒绝掉promise2,
-     * @param  {[type]} onFulfilled [description]
-     * @param  {[type]} onRejected  [description]
-     * @return {[type]}             [description]
-     */
-    then(onFulfilled = null, onRejected = null) {
-        const self = this;
-        //const isFunction = util.isTypeof('Function')
-        //if(!isFunction(onFulfilled) && !isFunction(onRejected)) return
-        //if (onFulfilled) this.fulfilledQueue.push(onFulfilled);
-        //if (onRejected) this.onRejected.push(onRejected);
+    }, {
+        key: 'checkAndExecute',
+        value: function checkAndExecute() {
+            if (this.state === 'pending') return;
+            var callbackQueue = this.state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
+            var self = this;
 
-        if (!onFulfilled) onFulfilled = self[privateFunctions.defaultFulfill];
-        if (!onRejected) onRejected = self[privateFunctions.defaultFulfill];
-        self.onFulfilledQueue.push(onFulfilled);
-        self.onRejectedQueue.push(onRejected);
-
-        const promise2 = new MyPromise(function (resolve, reject) {
-            //用onfullfilled或reject的返回值去resolve promise2
-            self._doneFullOrRej(function (err, value) {
-                if (err) return reject(err);
-                if (value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
+            callbackQueue.forEach(function (fn, i) {
+                __WEBPACK_IMPORTED_MODULE_0__util__["c" /* asyncCallback */](fn, self.value, self.multiPromise2Cb[i]);
             });
-        });
-        self.checkCurState();
-        return promise2;
-    }
 
-    /**
-     * fn: function(err,value),将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
-     * @param  {Function} fn [description]
-     * @return {[type]}      [description]
-     */
-    _doneFullOrRej(fn) {
-        this.multiPromise2Cb.push(function () {
-            setTimeout(fn);
-        });
-    }
+            this.onRejectedQueue = [];
+            this.onFulfilledQueue = [];
+            this.multiPromise2Cb = [];
+        }
 
-    /**
-     * 将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
-     * @param  {[type]} promise  [description]
-     * @param  {[type]} promise2 [then需要返回的promise对象，需要用promise去resolve它]
-     * @return {[type]} resolve         [promise2的状态]
-     
-    
-    _doneFullOrRej(promise, promise2, resolve, reject) {
-        promise2._resolve = resolve;
-        promise2._reject = reject;
-    }
-    */
+        /**
+         * 注册函数,同时监听当前promise的值，一有值就用它去resolve promise2
+         * 每一个promise对象都有一对自己的执行队列（fulfilled，reject,链式调用会生成一个新的promise对象，队列会重新创建）
+         * 同时该promise也应该是被决议了的，具体什么状态应该看之前promise（当前promise）的状态.具体来说之前fulfill或者reject必须有
+         * 返回值，用这个值v去执行resolveWithX(promise2,v), 得到这个值得过程中出了问题直接拒绝掉promise2,
+         * @param  {[type]} onFulfilled [description]
+         * @param  {[type]} onRejected  [description]
+         * @return {[type]}             [description]
+         */
 
-    /**
-     * 私有方法，默认的fulfill函数跟reject函数
-     * 
-     */
-    [privateFunctions.defaultFulfill](value) {
-        return value;
-    }
+    }, {
+        key: 'then',
+        value: function then() {
+            var onFulfilled = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+            var onRejected = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
-    [privateFunctions.defaultReject](reason) {
-        throw reason;
-    }
+            var self = this;
+            var isFunction = __WEBPACK_IMPORTED_MODULE_0__util__["a" /* isTypeof */]('Function');
 
-    /**
-     * 类方法
-     * @param  {[type]} value [description]
-     * @return {[type]}       [description]
-     */
-    // static resolve(value = null) {
-    //     let promise = new MyPromise();
-    //     _verifyAndResolve(promise, value);
-    //     return promise;
-    // }
+            if (!isFunction(onFulfilled)) onFulfilled = self[privateFunctions.defaultFulfill];
+            if (!isFunction(onRejected)) onRejected = self[privateFunctions.defaultReject];
+            self.onFulfilledQueue.push(onFulfilled);
+            self.onRejectedQueue.push(onRejected);
 
-    static reject(reason) {
-        return new MyPromise(function (resolve, reject) {
-            reject(reason);
-        });
-    }
+            //同步执行下去的，因此一个promise的ful,rej,以及promise2的resolve函数是可以得到的。但是执行的话顺序就要区分。
+            var promise2 = new MyPromise(function (resolve, reject) {
+                //用onfullfilled或reject的返回值去resolve promise2
+                self._doneFullOrRej(function (err, value) {
+                    if (err) return reject(err);
+                    if (value) resolve(value); //因为myPromise的resolve部分已经定义好了，要不然还要用resolveWithX(this,value)来操作
+                });
+            });
+            self.checkAndExecute();
+            return promise2;
+        }
 
-    static all(iterable) {}
+        /**
+         * fn: function(err,value),将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
+         * @param  {Function} fn [description]
+         * @return {[type]}      [description]
+         */
 
-    static race(iterable) {}
+    }, {
+        key: '_doneFullOrRej',
+        value: function _doneFullOrRej(fn) {
+            this.multiPromise2Cb.push(fn);
+            // this.multiPromise2Cb.push(function(){
+            //     setTimeout(fn)
+            // });
+        }
 
-}
-window.MyPromise = MyPromise;
-// module.exports = MyPromise
-// window.MyPromise = exports.default = MyPromise
+        /**
+         * 将promise2挂上来，在asyncCallback里面监听fulfill/reject结果
+         * @param  {[type]} promise  [description]
+         * @param  {[type]} promise2 [then需要返回的promise对象，需要用promise去resolve它]
+         * @return {[type]} resolve         [promise2的状态]
+         
+        
+        _doneFullOrRej(promise, promise2, resolve, reject) {
+            promise2._resolve = resolve;
+            promise2._reject = reject;
+        }
+        */
+
+        /**
+         * 私有方法，默认的fulfill函数跟reject函数
+         * 
+         */
+
+    }, {
+        key: privateFunctions.defaultFulfill,
+        value: function value(_value) {
+            return _value;
+        }
+    }, {
+        key: privateFunctions.defaultReject,
+        value: function value(reason) {
+            throw reason;
+        }
+
+        /**
+         * 类方法
+         * @param  {[type]} value [description]
+         * @return {[type]}       [description]
+         */
+        // static resolve(value = null) {
+        //     let promise = new MyPromise();
+        //     _verifyAndResolve(promise, value);
+        //     return promise;
+        // }
+
+    }], [{
+        key: 'reject',
+        value: function reject(reason) {
+            return new MyPromise(function (resolve, reject) {
+                reject(reason);
+            });
+        }
+    }, {
+        key: 'all',
+        value: function all(iterable) {}
+    }, {
+        key: 'race',
+        value: function race(iterable) {}
+    }]);
+
+    return MyPromise;
+}();
+// window.MyPromise = MyPromise
+
+
+exports.default = MyPromise;
 
 /***/ }),
 /* 3 */
@@ -669,7 +716,7 @@ window.MyPromise = MyPromise;
     }
 
     function installNextTickImplementation() {
-        registerImmediate = function (handle) {
+        registerImmediate = function registerImmediate(handle) {
             process.nextTick(function () {
                 runIfPresent(handle);
             });
@@ -697,7 +744,7 @@ window.MyPromise = MyPromise;
         // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
 
         var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function (event) {
+        var onGlobalMessage = function onGlobalMessage(event) {
             if (event.source === global && typeof event.data === "string" && event.data.indexOf(messagePrefix) === 0) {
                 runIfPresent(+event.data.slice(messagePrefix.length));
             }
@@ -709,7 +756,7 @@ window.MyPromise = MyPromise;
             global.attachEvent("onmessage", onGlobalMessage);
         }
 
-        registerImmediate = function (handle) {
+        registerImmediate = function registerImmediate(handle) {
             global.postMessage(messagePrefix + handle, "*");
         };
     }
@@ -721,14 +768,14 @@ window.MyPromise = MyPromise;
             runIfPresent(handle);
         };
 
-        registerImmediate = function (handle) {
+        registerImmediate = function registerImmediate(handle) {
             channel.port2.postMessage(handle);
         };
     }
 
     function installReadyStateChangeImplementation() {
         var html = doc.documentElement;
-        registerImmediate = function (handle) {
+        registerImmediate = function registerImmediate(handle) {
             // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
             // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
             var script = doc.createElement("script");
@@ -743,7 +790,7 @@ window.MyPromise = MyPromise;
     }
 
     function installSetTimeoutImplementation() {
-        registerImmediate = function (handle) {
+        registerImmediate = function registerImmediate(handle) {
             setTimeout(runIfPresent, 0, handle);
         };
     }
@@ -835,6 +882,8 @@ exports.clearImmediate = clearImmediate;
 /* 5 */
 /***/ (function(module, exports) {
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var g;
 
 // This works in non-strict mode
@@ -847,7 +896,7 @@ try {
 	g = g || Function("return this")() || (1, eval)("this");
 } catch (e) {
 	// This works if the window reference is available
-	if (typeof window === "object") g = window;
+	if ((typeof window === "undefined" ? "undefined" : _typeof(window)) === "object") g = window;
 }
 
 // g can still be undefined, but nothing to do about it...

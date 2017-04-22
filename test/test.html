@@ -10,21 +10,31 @@
 </body>
 <script type="text/javascript" src='../dist/myPromise.js'></script>
 <script type="text/javascript">
-// const test = new window.MyPromise(function(resolve, reject) {
-//     console.log('--------');
-//     reject(3);
-// })
+var test = new window.MyPromise(function(resolve, reject) {
+    resolve({
+        dummy: 'dummy'
+    })
+})
+var p1 = test.then(function() {
+        throw 'error in fulfill';
+    })
+p1.then(null, function(e) {
+        console.log(e);
+    });
 
-// test.then(function(v) {
-//     console.log(v)
-// }, function(e) {
-//     console.log(e)
-// }).then(function(v) {
-//     console.log('second then', v)
-// }, function(e) {
-//     console.log('second e', e)
-// })
+var test2 = new window.MyPromise(function(resolve, reject) {
+    reject({
+        dummy: 'dummy'
+    })
+})
+test2.then(null,function(){
+	throw 'test Reject exception'
+}).then(null,function(e){
+	console.log(e)
+})
 
+/**
+//test1:
 let myFirstPromise = new MyPromise((resolve, reject) => {
 
     setTimeout(function() {
@@ -32,6 +42,8 @@ let myFirstPromise = new MyPromise((resolve, reject) => {
     }, 250);
 });
 
+
+//test2: 
 myFirstPromise.then((successMessage) => {
     console.log("Yay! " + successMessage);
 });
@@ -76,7 +88,8 @@ function testPromise() {
         ') Promise made (<small>Sync code terminated</small>)<br/>');
 }
 
-testPromise()
+// testPromise()
+*/
 </script>
 
 </html>

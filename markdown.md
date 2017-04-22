@@ -25,6 +25,30 @@ fulfill活着reject没有返回数值，Promise2会怎么样
 
 
 
+
+
+---
+testcase: 
+1. resolve跟then都要去 checkAndExcute
+then是因为有可能已经决议了，then才注册
+resovle检查是因为，有可能在delay了resolve，这个时候then已经注册完了
+
+
+---
+
+
+fix:
+1. 类型判断的疏漏，undefined跟null是没有constructor的，所以不能那么判断，有可能遇到x为非thenable对象，那么x.then
+2. promise2的resolve也要异步，直接跟ful一样用async就行了。因为是一个队列里面的。
+3. 之前弄成下一个事件循环里面的了。
+
+
+todo: 
+1，设置属性不可访问及write
+
+
+
+
 ### 调试
 To debug the "start" script, make sure the $NODE_DEBUG_OPTION string is specified as the first argument for the node command you'd like to debug.
 For example:

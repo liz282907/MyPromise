@@ -2,11 +2,22 @@ export const isTypeof = (type)=>{
 	return (obj)=>{
 		const types = type.split("||");
 		return types.some(type=>{
-			const reg = new RegExp(`function\\s+${type}+`)
-			return obj.constructor.toString().search(reg)!==-1
+			const reg = new RegExp(`function\\s+(${type}).*`)
+			let objType;
+			if(obj===null) objType = 'null'
+			else if(typeof(obj)==='undefined') objType = 'undefined'
+			else{
+				const matchArr = obj.constructor.toString().match(reg)
+				if(!matchArr) return false
+				objType = matchArr[1]
+			}
+			return objType===type
+
+			// if(type==='null') return obj===null;
+			// else if(type==='undefined') return typeof(obj)===type
+			// else return obj!==null && typeof(obj)!=='undefined' &&obj.constructor.toString().search(reg)!==-1
 		})		
 	}
-	
 }
 
 const isObject = isTypeof('Object');
