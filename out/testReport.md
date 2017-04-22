@@ -2,14 +2,14 @@
 > my-promise@1.0.0 start /Users/luchen/Documents/study/test/Promise
 > webpack && promises-aplus-tests test/my-adapter "markdown"
 
-Hash: 1bd3275a3020081ddf54
+Hash: 09f207d0b3e036d158de
 Version: webpack 2.4.1
-Time: 906ms
-       Asset     Size  Chunks             Chunk Names
-myPromise.js  31.2 kB       0  [emitted]  main
+Time: 924ms
+       Asset   Size  Chunks             Chunk Names
+myPromise.js  30 kB       0  [emitted]  main
    [0] ./~/process/browser.js 5.31 kB {0} [built]
    [1] ./myPromise/util.js 3.15 kB {0} [built]
-   [2] ./myPromise/Promise.js 9.86 kB {0} [built]
+   [2] ./myPromise/Promise.js 8.63 kB {0} [built]
    [3] ./~/setimmediate/setImmediate.js 6.66 kB {0} [built]
    [4] ./~/timers-browserify/main.js 1.36 kB {0} [built]
    [5] (webpack)/buildin/global.js 808 bytes {0} [built]
