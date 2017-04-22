@@ -367,10 +367,6 @@ var privateFunctions = {
     'defaultReject': Symbol('default-reject')
 };
 
-// function subscribeToFinalValue(promise,doneFullOrRej){
-//     promise.listeners.push(doneFullOrRej);
-// }
-
 /**
  * 1，输入如果与promise指向同一个，则reject
  * 2，如果是promise，等它执行完
@@ -486,16 +482,6 @@ var MyPromise = function () {
             this.value = result;
 
             this.checkAndExecute();
-            // const callbackQueue = state === 'fulfilled' ? this.onFulfilledQueue : this.onRejectedQueue; //2
-            // const self = this;
-
-            // callbackQueue.forEach((fn, i) => {
-            //     util.asyncCallback(fn, result, self.multiPromise2Cb[i]);
-            // })
-
-            // this.onRejectedQueue =[];
-            // this.onFulfilledQueue = [];
-            // this.multiPromise2Cb = []
         }
     }, {
         key: 'catch',
