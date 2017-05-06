@@ -225,8 +225,40 @@ class MyPromise {
 
     }
 
+    static promisify(fn,options){
+        if(!util.isFunction(fn)) throw new TypeError(util.extractFnName(fn) + 'is not a function');
+        const defaultOptions = {
+            multiArgs : false,
+            context: this
+        }
+        
+        const mergedOptions = Object.assign({},defaultOptions,options);
+        
+        return (...args)=>{
+            return new MyPromise((resolve,reject)=>{
+
+                const defaultCallback = (err,...values)=>{
+                    if(err) reject(err);
+
+                    let value = values;
+                    if(!mergedOptions.multiArgs) value = value[0];//默认用第一个值去fullfill
+                    resolve(value);     //resolve?还是fulfill,因为这边是非fun非Object，resolve等于fulfill
+                }
+
+                let finalArgs = args.concat(defaultCallback);
+                try{
+                    fn.apply(mergedOptions.context,finalArgs);
+                }catch(err){
+                    reject(err); //callback不一定在下一轮event-loop里面执行，有两种可能，一个是执行fn的时候就出错（尚未决议），
+                                //那么这边直接reject就好，一种是同步执行callback，出错，那么因为上面我们对resolve,reject等做了处理，只会决议一次，因此会跳过。
+                                //resolve,reject上面已经做了excuted的判断，
+                }
+            })
+        }
+    }
+
 
 
 }
-// window.MyPromise = MyPromise
-exports.default = MyPromise
+window.MyPromise = MyPromise
+// exports.default = MyPromise

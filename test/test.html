@@ -52,6 +52,25 @@ var p1 = test2.then(function(v) {
     	console.log(err)
     })
 
+function testPromisify(d1,d2,callback){
+    console.log('---test promisify---',d1,d2);
+    callback(null,d1,d2);
+}
+
+var  testPromisifyAsync = new window.MyPromise.promisify(testPromisify,{multiArgs:true})
+
+testPromisifyAsync('arg1','arg2')
+    .then(function(v,v2){
+        console.log('get result in then callback',v,v2);
+        return 4
+    }).then(function(v){
+        console.log('get value ',v)
+    }).catch(function(err){
+        console.log(err);
+    })
+
+
+
 
 /**
 //test1:

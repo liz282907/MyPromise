@@ -91,6 +91,12 @@ export const asyncCallback = (fn,value,promise2cb)=>{
 	});
 }
 
+export const extractFnName = (fn)=>{
+	if(isFunction(fn)){
+		return fn.toString().match(/function\s+(\w+)\(/)[1];
+	}
+	
+}
 
 
 

@@ -259,6 +259,7 @@ process.umask = function () {
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return isFunction; });
 /* unused harmony export isThenable */
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return asyncCallback; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "d", function() { return extractFnName; });
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var isTypeof = function isTypeof(type) {
@@ -346,6 +347,12 @@ var asyncCallback = function asyncCallback(fn, value, promise2cb) {
 			return;
 		}
 	});
+};
+
+var extractFnName = function extractFnName(fn) {
+	if (isFunction(fn)) {
+		return fn.toString().match(/function\s+(\w+)\(/)[1];
+	}
 };
 /* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(0), __webpack_require__(4).setImmediate))
 
@@ -602,14 +609,54 @@ var MyPromise = function () {
     }, {
         key: 'race',
         value: function race(iterable) {}
+    }, {
+        key: 'promisify',
+        value: function promisify(fn, options) {
+            if (!__WEBPACK_IMPORTED_MODULE_0__util__["b" /* isFunction */](fn)) throw new TypeError(__WEBPACK_IMPORTED_MODULE_0__util__["d" /* extractFnName */](fn) + 'is not a function');
+            var defaultOptions = {
+                multiArgs: false,
+                context: this
+            };
+
+            var mergedOptions = Object.assign({}, defaultOptions, options);
+
+            return function () {
+                for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                    args[_key] = arguments[_key];
+                }
+
+                return new MyPromise(function (resolve, reject) {
+
+                    var defaultCallback = function defaultCallback(err) {
+                        for (var _len2 = arguments.length, values = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+                            values[_key2 - 1] = arguments[_key2];
+                        }
+
+                        if (err) reject(err);
+
+                        var value = values;
+                        if (!mergedOptions.multiArgs) value = value[0]; //默认用第一个值去fullfill
+                        resolve(value); //resolve?还是fulfill,因为这边是非fun非Object，resolve等于fulfill
+                    };
+
+                    var finalArgs = args.concat(defaultCallback);
+                    try {
+                        fn.apply(mergedOptions.context, finalArgs);
+                    } catch (err) {
+                        reject(err); //callback不一定在下一轮event-loop里面执行，有两种可能，一个是执行fn的时候就出错（尚未决议），
+                        //那么这边直接reject就好，一种是同步执行callback，出错，那么因为上面我们对resolve,reject等做了处理，只会决议一次，因此会跳过。
+                        //resolve,reject上面已经做了excuted的判断，
+                    }
+                });
+            };
+        }
     }]);
 
     return MyPromise;
 }();
-// window.MyPromise = MyPromise
 
-
-exports.default = MyPromise;
+window.MyPromise = MyPromise;
+// exports.default = MyPromise
 
 /***/ }),
 /* 3 */
